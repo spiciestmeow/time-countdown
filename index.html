@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PH Time Reset Flip Countdown</title>
+    <style>
+        :root {
+            --bg-color: #ffffff;
+            --card-bg: #5ba375;
+            --digit-color: #ffffff;
+            --label-color: #4a7c59; 
+            --header-color: #4a7c59;
+            --font-main: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            --anim-speed: 0.35s; 
+            --heavy-drop: cubic-bezier(0.4, 0, 1, 1); 
+            --card-height: 80px;
+            --perspective: 300px;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: var(--font-main);
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            color: var(--header-color);
+            font-weight: 700;
+            font-size: 24px;
+            letter-spacing: 1px;
+        }
+
+        .countdown-container {
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+        }
+
+        .segment {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .flip-card {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            width: 75px;
+            height: var(--card-height);
+            font-size: 48px;
+            font-weight: 700;
+            border-radius: 6px;
+            perspective: var(--perspective);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        .top, .bottom, .top-flip, .bottom-flip {
+            height: 50%;
+            width: 100%;
+            overflow: hidden;
+            background-color: var(--card-bg);
+            color: var(--digit-color);
+            text-align: center;
+            box-sizing: border-box;
+            position: absolute;
+            backface-visibility: hidden;
+        }
+
+        .top, .top-flip {
+            top: 0;
+            border-radius: 6px 6px 0 0;
+            line-height: var(--card-height); 
+            border-bottom: 0.5px solid rgba(0,0,0,0.15);
+        }
+
+        .bottom, .bottom-flip {
+            bottom: 0;
+            border-radius: 0 0 6px 6px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; 
+            line-height: 0; 
+        }
+
+        .top-flip {
+            z-index: 3;
+            transform-origin: bottom;
+            animation: flip-top var(--anim-speed) var(--heavy-drop) forwards;
+            background-image: linear-gradient(rgba(0,0,0,0), rgba(0,0,0,0.5)); 
+        }
+
+        .bottom-flip {
+            z-index: 2;
+            transform-origin: top;
+            transform: rotateX(90deg);
+            animation: flip-bottom var(--anim-speed) ease-out var(--anim-speed) forwards;
+        }
+
+        .label { font-size: 16px; color: var(--label-color); font-weight: 500; }
+        
+        .to-go {
+            background-color: var(--card-bg);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 18px;
+            margin-top: 22px; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        @keyframes flip-top {
+            0% { transform: rotateX(0deg); }
+            100% { transform: rotateX(-90deg); }
+        }
+
+        @keyframes flip-bottom {
+            0% { transform: rotateX(90deg); filter: brightness(0.3); }
+            100% { transform: rotateX(0deg); filter: brightness(1); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <span>⏳</span> NEXT DROP IN:
+    </div>
+
+    <div class="countdown-container">
+        <div class="segment">
+            <div class="flip-card" id="hours"><div class="top">00</div><div class="bottom">00</div></div>
+            <div class="label" id="label-hours">Hours</div>
+        </div>
+        <div class="segment">
+            <div class="flip-card" id="minutes"><div class="top">00</div><div class="bottom">00</div></div>
+            <div class="label" id="label-minutes">Minutes</div>
+        </div>
+        <div class="segment">
+            <div class="flip-card" id="seconds"><div class="top">00</div><div class="bottom">00</div></div>
+            <div class="label" id="label-seconds">Seconds</div>
+        </div>
+        <div class="to-go">to go</div>
+    </div>
+
+<script>
+    /**
+     * Calculates the timestamp for the next 8:00 PM PHT (UTC+8)
+     */
+    function getNextResetTime() {
+        const now = new Date();
+        
+        // Create a date object for "today"
+        let target = new Date(now);
+        
+        // Set target to 8:00 PM (20:00:00)
+        target.setHours(20, 0, 0, 0);
+
+        // If it's already past 8:00 PM today, set target to 8:00 PM tomorrow
+        if (now >= target) {
+            target.setDate(target.getDate() + 1);
+        }
+
+        return target.getTime();
+    }
+
+    let targetDate = getNextResetTime();
+
+    function updateTime() {
+        const now = new Date().getTime();
+        let diff = targetDate - now;
+
+        // If countdown hits zero, recalculate the next reset time (tomorrow 8PM)
+        if (diff <= 0) {
+            targetDate = getNextResetTime();
+            diff = targetDate - now;
+        }
+
+        const h = Math.floor(diff / (1000 * 60 * 60));
+        const m = Math.floor((diff / (1000 * 60)) % 60);
+        const s = Math.floor((diff / 1000) % 60);
+
+        flip(document.getElementById('hours'), h);
+        flip(document.getElementById('minutes'), m);
+        flip(document.getElementById('seconds'), s);
+
+        // Singular/Plural Label Logic
+        document.getElementById('label-hours').innerText = h <= 1 ? "Hour" : "Hours";
+        document.getElementById('label-minutes').innerText = m <= 1 ? "Minute" : "Minutes";
+        document.getElementById('label-seconds').innerText = s <= 1 ? "Second" : "Seconds";
+    }
+
+    function flip(card, newValue) {
+        const top = card.querySelector(".top");
+        const bottom = card.querySelector(".bottom");
+        const currentValStr = top.innerText;
+        const newValStr = String(newValue).padStart(2, "0");
+
+        if (newValStr === currentValStr) return;
+
+        const topFlip = document.createElement("div");
+        topFlip.classList.add("top-flip");
+        topFlip.innerText = currentValStr;
+
+        const bottomFlip = document.createElement("div");
+        bottomFlip.classList.add("bottom-flip");
+        bottomFlip.innerText = newValStr;
+
+        topFlip.addEventListener("animationstart", () => { top.innerText = newValStr; });
+        topFlip.addEventListener("animationend", () => { topFlip.remove(); });
+        bottomFlip.addEventListener("animationend", () => { 
+            bottom.innerText = newValStr; 
+            bottomFlip.remove(); 
+        });
+
+        card.appendChild(topFlip);
+        card.appendChild(bottomFlip);
+    }
+
+    setInterval(updateTime, 1000);
+    updateTime();
+</script>
+</body>
+</html>

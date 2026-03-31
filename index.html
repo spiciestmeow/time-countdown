@@ -11,6 +11,7 @@
             --digit-color: #ffffff;
             --label-color: #4a7c59; 
             --header-color: #4a7c59;
+            --accent-glow: #ffeb3b;
             --font-main: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             --anim-speed: 0.45s; 
             --card-height: 80px;
@@ -26,8 +27,7 @@
             height: 100vh;
             margin: 0;
             font-family: var(--font-main);
-            overflow: hidden;
-            transition: background-color 0.3s ease;
+            overflow: hidden; 
         }
 
         #confetti-canvas {
@@ -38,58 +38,41 @@
             z-index: 10;
         }
 
-        /* --- IMPACT & REVEAL ANIMATIONS --- */
+        /* --- Reveal Message Styling --- */
         #drop-message {
             display: none;
             flex-direction: column;
             align-items: center;
             text-align: center;
             z-index: 20;
-            animation: stomp-in 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            animation: pop-in 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
         .drop-text {
-            font-size: 42px;
+            font-size: 32px;
             font-weight: 900;
+            color: #d32f2f;
             text-transform: uppercase;
-            letter-spacing: 3px;
-            /* Animated Rainbow Glow */
-            background: linear-gradient(to right, #d32f2f, #ffeb3b, #2196f3, #d32f2f);
-            background-size: 200% auto;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            animation: shine 2s linear infinite, pulse-grow 1.5s ease-in-out infinite;
-            filter: drop-shadow(0 0 15px rgba(211, 47, 47, 0.3));
+            letter-spacing: 2px;
+            text-shadow: 0 0 20px rgba(211, 47, 47, 0.3);
+            margin-bottom: 5px;
         }
 
         .drop-subtext {
-            font-size: 20px;
+            font-size: 18px;
             color: var(--label-color);
             font-weight: 600;
-            margin-top: 10px;
-            opacity: 0.9;
+            animation: pulse-opacity 1.5s infinite;
         }
 
-        /* Keyframes */
-        @keyframes stomp-in {
-            0% { transform: scale(4); opacity: 0; filter: blur(15px); }
-            70% { transform: scale(0.9); opacity: 1; filter: blur(0); }
-            100% { transform: scale(1); }
+        @keyframes pop-in {
+            0% { transform: scale(0); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
         }
 
-        @keyframes shine { to { background-position: 200% center; } }
-
-        @keyframes pulse-grow {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.08); }
-        }
-
-        .shake-lite { animation: shake 0.3s ease-in-out; }
-        @keyframes shake {
-            0%, 100% { transform: translate(0, 0); }
-            25% { transform: translate(-8px, 4px); }
-            50% { transform: translate(8px, -4px); }
-            75% { transform: translate(-4px, -4px); }
+        @keyframes pulse-opacity {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
         }
 
         /* --- Timer Styles --- */
@@ -109,6 +92,7 @@
             gap: 12px;
             align-items: flex-start;
             z-index: 5;
+            transition: all 0.5s ease;
         }
 
         .segment { display: flex; flex-direction: column; align-items: center; gap: 12px; }
@@ -134,8 +118,15 @@
             background-image: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(0,0,0,0.05) 100%);
         }
 
-        .top, .top-flip { top: 0; border-radius: 6px 6px 0 0; line-height: var(--card-height); border-bottom: 0.5px solid rgba(0,0,0,0.15); }
-        .bottom, .bottom-flip { bottom: 0; border-radius: 0 0 6px 6px; display: flex; justify-content: center; align-items: flex-start; line-height: 0; }
+        .top, .top-flip {
+            top: 0; border-radius: 6px 6px 0 0; line-height: var(--card-height); 
+            border-bottom: 0.5px solid rgba(0,0,0,0.15);
+        }
+
+        .bottom, .bottom-flip {
+            bottom: 0; border-radius: 0 0 6px 6px;
+            display: flex; justify-content: center; align-items: flex-start; line-height: 0; 
+        }
 
         .top-flip { z-index: 3; transform-origin: bottom; animation: flip-top var(--anim-speed) ease-in forwards; }
         .bottom-flip { z-index: 2; transform-origin: top; transform: rotateX(90deg); animation: flip-bottom var(--anim-speed) cubic-bezier(0.4, 0, 0.2, 1) var(--anim-speed) forwards; }
@@ -152,7 +143,10 @@
     <canvas id="confetti-canvas"></canvas>
 
     <div id="countdown-wrapper" style="display: flex; flex-direction: column; align-items: center;">
-        <div class="header"><span>🎮</span> NEW STEAM DROP IN:</div>
+        <div class="header" id="header-text">
+            <span>🎮</span> NEW STEAM DROP IN:
+        </div>
+
         <div class="countdown-container" id="main-timer">
             <div class="segment">
                 <div class="flip-card" id="hours"><div class="top">00</div><div class="bottom">00</div></div>
@@ -190,14 +184,11 @@
     function startCelebration() {
         isRevealing = true;
         
-        // Impact Effect
-        document.body.classList.add('shake-lite');
-        setTimeout(() => document.body.classList.remove('shake-lite'), 300);
-
+        // Switch UI view
         timerUI.style.display = 'none';
         messageUI.style.display = 'flex';
 
-        // Explode Confetti
+        // Prepare Confetti
         confetti = Array.from({length: 250}, () => ({
             x: Math.random() * canvas.width,
             y: Math.random() * canvas.height - canvas.height,
@@ -210,14 +201,15 @@
         }));
         animateConfetti();
 
-        // 30 Second Buffer (Optimized for hype)
+        // Reveal window for 60 seconds
         setTimeout(() => {
             isRevealing = false;
             messageUI.style.display = 'none';
             timerUI.style.display = 'flex';
             confetti = [];
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-        }, 30000); 
+            // targetDate is already updated by updateTime loop
+        }, 60000); 
     }
 
     function animateConfetti() {
@@ -242,14 +234,14 @@
         return target.getTime();
     }
 
-    // --- TARGET TIME LOGIC ---
-    // TEST MODE: 5 seconds. To go live, change this to: let targetDate = getNextResetTime();
+    // Set target to 5 seconds for test
     let targetDate = new Date().getTime() + 5000;
 
     function updateTime() {
         const now = new Date().getTime();
         let diff = targetDate - now;
 
+        // If time hits zero, trigger celebration and set the next target immediately
         if (diff <= 0) {
             if (!isRevealing) startCelebration();
             targetDate = getNextResetTime();
@@ -260,6 +252,7 @@
         const m = Math.floor((diff / (1000 * 60)) % 60);
         const s = Math.floor((diff / 1000) % 60);
 
+        // Update flips even if UI is hidden so it's correct when it returns
         flip(document.getElementById('hours'), h);
         flip(document.getElementById('minutes'), m);
         flip(document.getElementById('seconds'), s);
@@ -275,16 +268,21 @@
         const currentValStr = top.innerText;
         const newValStr = String(newValue).padStart(2, "0");
         if (newValStr === currentValStr) return;
+        
         const topFlip = document.createElement("div");
         topFlip.classList.add("top-flip");
         topFlip.innerText = currentValStr;
+        
         const bottomFlip = document.createElement("div");
         bottomFlip.classList.add("bottom-flip");
         bottomFlip.innerText = newValStr;
+        
         topFlip.addEventListener("animationstart", () => { top.innerText = newValStr; });
         topFlip.addEventListener("animationend", () => { topFlip.remove(); });
         bottomFlip.addEventListener("animationend", () => { bottom.innerText = newValStr; bottomFlip.remove(); });
-        card.appendChild(topFlip); card.appendChild(bottomFlip);
+        
+        card.appendChild(topFlip); 
+        card.appendChild(bottomFlip);
     }
 
     setInterval(updateTime, 1000);

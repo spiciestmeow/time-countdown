@@ -49,7 +49,7 @@
         }
 
         .drop-text {
-            font-size: 32px;
+            font-size: 38px;
             font-weight: 900;
             color: #d32f2f;
             text-transform: uppercase;
@@ -59,7 +59,7 @@
         }
 
         .drop-subtext {
-            font-size: 18px;
+            font-size: 20px;
             color: var(--label-color);
             font-weight: 600;
             animation: pulse-opacity 1.5s infinite;
@@ -73,6 +73,15 @@
         @keyframes pulse-opacity {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.5; }
+        }
+
+        /* Screen Shake for Impact */
+        .shake { animation: shake-kb 0.3s ease-in-out; }
+        @keyframes shake-kb {
+            0%, 100% { transform: translate(0,0); }
+            25% { transform: translate(-5px, 5px); }
+            50% { transform: translate(5px, -5px); }
+            75% { transform: translate(-5px, -5px); }
         }
 
         /* --- Timer Styles --- */
@@ -92,7 +101,6 @@
             gap: 12px;
             align-items: flex-start;
             z-index: 5;
-            transition: all 0.5s ease;
         }
 
         .segment { display: flex; flex-direction: column; align-items: center; gap: 12px; }
@@ -184,6 +192,10 @@
     function startCelebration() {
         isRevealing = true;
         
+        // Impact Effect
+        document.body.classList.add('shake');
+        setTimeout(() => document.body.classList.remove('shake'), 300);
+
         // Switch UI view
         timerUI.style.display = 'none';
         messageUI.style.display = 'flex';
@@ -201,15 +213,14 @@
         }));
         animateConfetti();
 
-        // Reveal window for 60 seconds
+        // Show "Dropped" message for 30 seconds
         setTimeout(() => {
             isRevealing = false;
             messageUI.style.display = 'none';
             timerUI.style.display = 'flex';
             confetti = [];
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            // targetDate is already updated by updateTime loop
-        }, 60000); 
+        }, 30000); 
     }
 
     function animateConfetti() {
@@ -234,14 +245,14 @@
         return target.getTime();
     }
 
-    // Set target to 5 seconds for test
+    // Set target to 5 seconds for test. 
+    // To go live, use: let targetDate = getNextResetTime();
     let targetDate = new Date().getTime() + 5000;
 
     function updateTime() {
         const now = new Date().getTime();
         let diff = targetDate - now;
 
-        // If time hits zero, trigger celebration and set the next target immediately
         if (diff <= 0) {
             if (!isRevealing) startCelebration();
             targetDate = getNextResetTime();
@@ -252,7 +263,6 @@
         const m = Math.floor((diff / (1000 * 60)) % 60);
         const s = Math.floor((diff / 1000) % 60);
 
-        // Update flips even if UI is hidden so it's correct when it returns
         flip(document.getElementById('hours'), h);
         flip(document.getElementById('minutes'), m);
         flip(document.getElementById('seconds'), s);

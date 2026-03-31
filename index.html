@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PH Time Reset Flip Countdown</title>
+    <title>Steam Account Drop Event</title>
     <style>
         :root {
             --bg-color: #ffffff;
@@ -12,10 +12,9 @@
             --label-color: #4a7c59; 
             --header-color: #4a7c59;
             --font-main: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            --anim-speed: 0.35s; 
-            --heavy-drop: cubic-bezier(0.4, 0, 1, 1); 
+            --anim-speed: 0.45s; 
             --card-height: 80px;
-            --perspective: 300px;
+            --perspective: 250px; 
         }
 
         body {
@@ -27,8 +26,73 @@
             height: 100vh;
             margin: 0;
             font-family: var(--font-main);
+            overflow: hidden;
+            transition: background-color 0.3s ease;
         }
 
+        #confetti-canvas {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        /* --- IMPACT & REVEAL ANIMATIONS --- */
+        #drop-message {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            z-index: 20;
+            animation: stomp-in 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        .drop-text {
+            font-size: 42px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            /* Animated Rainbow Glow */
+            background: linear-gradient(to right, #d32f2f, #ffeb3b, #2196f3, #d32f2f);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: shine 2s linear infinite, pulse-grow 1.5s ease-in-out infinite;
+            filter: drop-shadow(0 0 15px rgba(211, 47, 47, 0.3));
+        }
+
+        .drop-subtext {
+            font-size: 20px;
+            color: var(--label-color);
+            font-weight: 600;
+            margin-top: 10px;
+            opacity: 0.9;
+        }
+
+        /* Keyframes */
+        @keyframes stomp-in {
+            0% { transform: scale(4); opacity: 0; filter: blur(15px); }
+            70% { transform: scale(0.9); opacity: 1; filter: blur(0); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes shine { to { background-position: 200% center; } }
+
+        @keyframes pulse-grow {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.08); }
+        }
+
+        .shake-lite { animation: shake 0.3s ease-in-out; }
+        @keyframes shake {
+            0%, 100% { transform: translate(0, 0); }
+            25% { transform: translate(-8px, 4px); }
+            50% { transform: translate(8px, -4px); }
+            75% { transform: translate(-4px, -4px); }
+        }
+
+        /* --- Timer Styles --- */
         .header {
             display: flex;
             align-items: center;
@@ -37,21 +101,17 @@
             color: var(--header-color);
             font-weight: 700;
             font-size: 24px;
-            letter-spacing: 1px;
+            z-index: 5;
         }
 
         .countdown-container {
             display: flex;
             gap: 12px;
             align-items: flex-start;
+            z-index: 5;
         }
 
-        .segment {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 12px;
-        }
+        .segment { display: flex; flex-direction: column; align-items: center; gap: 12px; }
 
         .flip-card {
             position: relative;
@@ -63,126 +123,135 @@
             font-weight: 700;
             border-radius: 6px;
             perspective: var(--perspective);
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 8px 15px rgba(0,0,0,0.1);
         }
 
         .top, .bottom, .top-flip, .bottom-flip {
-            height: 50%;
-            width: 100%;
-            overflow: hidden;
-            background-color: var(--card-bg);
-            color: var(--digit-color);
-            text-align: center;
-            box-sizing: border-box;
-            position: absolute;
+            height: 50%; width: 100%; overflow: hidden;
+            background-color: var(--card-bg); color: var(--digit-color);
+            text-align: center; box-sizing: border-box; position: absolute;
             backface-visibility: hidden;
+            background-image: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(0,0,0,0.05) 100%);
         }
 
-        .top, .top-flip {
-            top: 0;
-            border-radius: 6px 6px 0 0;
-            line-height: var(--card-height); 
-            border-bottom: 0.5px solid rgba(0,0,0,0.15);
-        }
+        .top, .top-flip { top: 0; border-radius: 6px 6px 0 0; line-height: var(--card-height); border-bottom: 0.5px solid rgba(0,0,0,0.15); }
+        .bottom, .bottom-flip { bottom: 0; border-radius: 0 0 6px 6px; display: flex; justify-content: center; align-items: flex-start; line-height: 0; }
 
-        .bottom, .bottom-flip {
-            bottom: 0;
-            border-radius: 0 0 6px 6px;
-            display: flex;
-            justify-content: center;
-            align-items: flex-start; 
-            line-height: 0; 
-        }
-
-        .top-flip {
-            z-index: 3;
-            transform-origin: bottom;
-            animation: flip-top var(--anim-speed) var(--heavy-drop) forwards;
-            background-image: linear-gradient(rgba(0,0,0,0), rgba(0,0,0,0.5)); 
-        }
-
-        .bottom-flip {
-            z-index: 2;
-            transform-origin: top;
-            transform: rotateX(90deg);
-            animation: flip-bottom var(--anim-speed) ease-out var(--anim-speed) forwards;
-        }
+        .top-flip { z-index: 3; transform-origin: bottom; animation: flip-top var(--anim-speed) ease-in forwards; }
+        .bottom-flip { z-index: 2; transform-origin: top; transform: rotateX(90deg); animation: flip-bottom var(--anim-speed) cubic-bezier(0.4, 0, 0.2, 1) var(--anim-speed) forwards; }
 
         .label { font-size: 16px; color: var(--label-color); font-weight: 500; }
-        
-        .to-go {
-            background-color: var(--card-bg);
-            color: white;
-            padding: 8px 12px;
-            border-radius: 6px;
-            font-weight: bold;
-            font-size: 18px;
-            margin-top: 22px; 
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-        }
+        .to-go { background-color: var(--card-bg); color: white; padding: 8px 12px; border-radius: 6px; font-weight: bold; font-size: 18px; margin-top: 22px; }
 
-        @keyframes flip-top {
-            0% { transform: rotateX(0deg); }
-            100% { transform: rotateX(-90deg); }
-        }
-
-        @keyframes flip-bottom {
-            0% { transform: rotateX(90deg); filter: brightness(0.3); }
-            100% { transform: rotateX(0deg); filter: brightness(1); }
-        }
+        @keyframes flip-top { 0% { transform: rotateX(0deg); } 100% { transform: rotateX(-100deg); } }
+        @keyframes flip-bottom { 0% { transform: rotateX(100deg); filter: brightness(0.4); } 100% { transform: rotateX(0deg); filter: brightness(1); } }
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <span>⏳</span> NEXT DROP IN:
+    <canvas id="confetti-canvas"></canvas>
+
+    <div id="countdown-wrapper" style="display: flex; flex-direction: column; align-items: center;">
+        <div class="header"><span>🎮</span> NEW STEAM DROP IN:</div>
+        <div class="countdown-container" id="main-timer">
+            <div class="segment">
+                <div class="flip-card" id="hours"><div class="top">00</div><div class="bottom">00</div></div>
+                <div class="label" id="label-hours">Hours</div>
+            </div>
+            <div class="segment">
+                <div class="flip-card" id="minutes"><div class="top">00</div><div class="bottom">00</div></div>
+                <div class="label" id="label-minutes">Minutes</div>
+            </div>
+            <div class="segment">
+                <div class="flip-card" id="seconds"><div class="top">00</div><div class="bottom">00</div></div>
+                <div class="label" id="label-seconds">Seconds</div>
+            </div>
+            <div class="to-go">to go</div>
+        </div>
     </div>
 
-    <div class="countdown-container">
-        <div class="segment">
-            <div class="flip-card" id="hours"><div class="top">00</div><div class="bottom">00</div></div>
-            <div class="label" id="label-hours">Hours</div>
-        </div>
-        <div class="segment">
-            <div class="flip-card" id="minutes"><div class="top">00</div><div class="bottom">00</div></div>
-            <div class="label" id="label-minutes">Minutes</div>
-        </div>
-        <div class="segment">
-            <div class="flip-card" id="seconds"><div class="top">00</div><div class="bottom">00</div></div>
-            <div class="label" id="label-seconds">Seconds</div>
-        </div>
-        <div class="to-go">to go</div>
+    <div id="drop-message">
+        <div class="drop-text">🔥 ACCOUNT DROPPED!</div>
+        <div class="drop-subtext">Check the pinned post to claim.</div>
     </div>
 
 <script>
-    /**
-     * Calculates the timestamp for the next 8:00 PM PHT (UTC+8)
-     */
+    const canvas = document.getElementById('confetti-canvas');
+    const ctx = canvas.getContext('2d');
+    const timerUI = document.getElementById('countdown-wrapper');
+    const messageUI = document.getElementById('drop-message');
+    let confetti = [];
+    let isRevealing = false;
+
+    function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    function startCelebration() {
+        isRevealing = true;
+        
+        // Impact Effect
+        document.body.classList.add('shake-lite');
+        setTimeout(() => document.body.classList.remove('shake-lite'), 300);
+
+        timerUI.style.display = 'none';
+        messageUI.style.display = 'flex';
+
+        // Explode Confetti
+        confetti = Array.from({length: 250}, () => ({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height - canvas.height,
+            r: Math.random() * 6 + 4,
+            d: Math.random() * 150,
+            color: ['#f44336', '#e91e63', '#9c27b0', '#2196f3', '#4caf50', '#ffeb3b', '#ff9800'][Math.floor(Math.random() * 7)],
+            tilt: Math.random() * 10 - 10,
+            tiltAngleIncremental: Math.random() * 0.07 + 0.05,
+            tiltAngle: 0
+        }));
+        animateConfetti();
+
+        // 30 Second Buffer (Optimized for hype)
+        setTimeout(() => {
+            isRevealing = false;
+            messageUI.style.display = 'none';
+            timerUI.style.display = 'flex';
+            confetti = [];
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }, 30000); 
+    }
+
+    function animateConfetti() {
+        if (confetti.length === 0) return;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        confetti.forEach((p) => {
+            p.tiltAngle += p.tiltAngleIncremental;
+            p.y += (Math.cos(p.d) + 3 + p.r / 2) / 2;
+            p.tilt = Math.sin(p.tiltAngle) * 15;
+            ctx.beginPath(); ctx.lineWidth = p.r; ctx.strokeStyle = p.color;
+            ctx.moveTo(p.x + p.tilt + p.r / 4, p.y); ctx.lineTo(p.x + p.tilt, p.y + p.tilt + p.r / 4);
+            ctx.stroke();
+        });
+        if (isRevealing) requestAnimationFrame(animateConfetti);
+    }
+
     function getNextResetTime() {
         const now = new Date();
-        
-        // Create a date object for "today"
         let target = new Date(now);
-        
-        // Set target to 8:00 PM (20:00:00)
-        target.setHours(20, 0, 0, 0);
-
-        // If it's already past 8:00 PM today, set target to 8:00 PM tomorrow
-        if (now >= target) {
-            target.setDate(target.getDate() + 1);
-        }
-
+        target.setHours(20, 0, 0, 0); 
+        if (now >= target) target.setDate(target.getDate() + 1);
         return target.getTime();
     }
 
-    let targetDate = getNextResetTime();
+    // --- TARGET TIME LOGIC ---
+    // TEST MODE: 5 seconds. To go live, change this to: let targetDate = getNextResetTime();
+    let targetDate = new Date().getTime() + 5000;
 
     function updateTime() {
         const now = new Date().getTime();
         let diff = targetDate - now;
 
-        // If countdown hits zero, recalculate the next reset time (tomorrow 8PM)
         if (diff <= 0) {
+            if (!isRevealing) startCelebration();
             targetDate = getNextResetTime();
             diff = targetDate - now;
         }
@@ -195,7 +264,6 @@
         flip(document.getElementById('minutes'), m);
         flip(document.getElementById('seconds'), s);
 
-        // Singular/Plural Label Logic
         document.getElementById('label-hours').innerText = h <= 1 ? "Hour" : "Hours";
         document.getElementById('label-minutes').innerText = m <= 1 ? "Minute" : "Minutes";
         document.getElementById('label-seconds').innerText = s <= 1 ? "Second" : "Seconds";
@@ -206,26 +274,17 @@
         const bottom = card.querySelector(".bottom");
         const currentValStr = top.innerText;
         const newValStr = String(newValue).padStart(2, "0");
-
         if (newValStr === currentValStr) return;
-
         const topFlip = document.createElement("div");
         topFlip.classList.add("top-flip");
         topFlip.innerText = currentValStr;
-
         const bottomFlip = document.createElement("div");
         bottomFlip.classList.add("bottom-flip");
         bottomFlip.innerText = newValStr;
-
         topFlip.addEventListener("animationstart", () => { top.innerText = newValStr; });
         topFlip.addEventListener("animationend", () => { topFlip.remove(); });
-        bottomFlip.addEventListener("animationend", () => { 
-            bottom.innerText = newValStr; 
-            bottomFlip.remove(); 
-        });
-
-        card.appendChild(topFlip);
-        card.appendChild(bottomFlip);
+        bottomFlip.addEventListener("animationend", () => { bottom.innerText = newValStr; bottomFlip.remove(); });
+        card.appendChild(topFlip); card.appendChild(bottomFlip);
     }
 
     setInterval(updateTime, 1000);

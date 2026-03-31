@@ -75,7 +75,6 @@
             50% { opacity: 0.5; }
         }
 
-        /* Screen Shake for Impact */
         .shake { animation: shake-kb 0.3s ease-in-out; }
         @keyframes shake-kb {
             0%, 100% { transform: translate(0,0); }
@@ -191,16 +190,12 @@
 
     function startCelebration() {
         isRevealing = true;
-        
-        // Impact Effect
         document.body.classList.add('shake');
         setTimeout(() => document.body.classList.remove('shake'), 300);
 
-        // Switch UI view
         timerUI.style.display = 'none';
         messageUI.style.display = 'flex';
 
-        // Prepare Confetti
         confetti = Array.from({length: 250}, () => ({
             x: Math.random() * canvas.width,
             y: Math.random() * canvas.height - canvas.height,
@@ -213,7 +208,7 @@
         }));
         animateConfetti();
 
-        // Show "Dropped" message for 30 seconds
+        // 30 Second reveal window
         setTimeout(() => {
             isRevealing = false;
             messageUI.style.display = 'none';
@@ -240,14 +235,38 @@
     function getNextResetTime() {
         const now = new Date();
         let target = new Date(now);
-        target.setHours(20, 0, 0, 0); 
-        if (now >= target) target.setDate(target.getDate() + 1);
+        const day = now.getDay(); // 0 is Sunday
+        const hour = now.getHours();
+
+        // Check for Sunday Special Logic
+        if (day === 0) { 
+            if (hour < 12) {
+                target.setHours(12, 0, 0, 0); // Target 12 PM Sunday
+            } else if (hour < 20) {
+                target.setHours(20, 0, 0, 0); // Target 8 PM Sunday
+            } else {
+                target.setDate(now.getDate() + 1);
+                target.setHours(20, 0, 0, 0); // Target Monday 8 PM
+            }
+        } 
+        // Normal Mon-Sat Logic
+        else {
+            if (hour < 20) {
+                target.setHours(20, 0, 0, 0); // Target 8 PM today
+            } else {
+                target.setDate(now.getDate() + 1);
+                // If tomorrow is Sunday, the next target is 12 PM
+                if (target.getDay() === 0) {
+                    target.setHours(12, 0, 0, 0);
+                } else {
+                    target.setHours(20, 0, 0, 0);
+                }
+            }
+        }
         return target.getTime();
     }
 
-    // Set target to 5 seconds for test. 
-    // To go live, use: let targetDate = getNextResetTime();
-    let targetDate = new Date().getTime() + 5000;
+    let targetDate = getNextResetTime();
 
     function updateTime() {
         const now = new Date().getTime();
@@ -267,9 +286,9 @@
         flip(document.getElementById('minutes'), m);
         flip(document.getElementById('seconds'), s);
 
-        document.getElementById('label-hours').innerText = h <= 1 ? "Hour" : "Hours";
-        document.getElementById('label-minutes').innerText = m <= 1 ? "Minute" : "Minutes";
-        document.getElementById('label-seconds').innerText = s <= 1 ? "Second" : "Seconds";
+        document.getElementById('label-hours').innerText = h === 1 ? "Hour" : "Hours";
+        document.getElementById('label-minutes').innerText = m === 1 ? "Minute" : "Minutes";
+        document.getElementById('label-seconds').innerText = s === 1 ? "Second" : "Seconds";
     }
 
     function flip(card, newValue) {
